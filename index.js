@@ -52,7 +52,7 @@ app.get("/greet/:name", (req, res) => {
     res.json({ message: `Hello, ${req.params.name}!` });
 });
 
-app.listen(3000, () => {
-    console.log("Server running at http://localhost:3000");
-    console.log("Swagger UI at http://localhost:3000/api-docs");
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
 });
