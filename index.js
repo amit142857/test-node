@@ -37,12 +37,6 @@ const swaggerOptions = {
             version: "1.0.1",
             description: "A simple API with user signup",
         },
-        tags: [
-            {
-                name: "Users",
-                description: "User management endpoints",
-            },
-        ],
     },
     apis: ["./index.js"],
 };
@@ -56,6 +50,8 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
  * @swagger
  * /signup:
  *   post:
+ *     tags:
+ *       - Users
  *     summary: Register a new user
  *     requestBody:
  *       required: true
@@ -120,6 +116,7 @@ app.post("/signup", async (req, res) => {
  * @swagger
  * /users:
  *   get:
+ *    tags: - Users
  *     summary: Get all users
  *     responses:
  *       200:
@@ -140,7 +137,8 @@ app.get("/users", async (req, res) => {
 /**
  * @swagger
  * /users/{id}:
- *   put:
+ *   put:   
+ *   tags: - Users
  *     summary: Update a user by ID
  *     parameters:
  *       - in: path
@@ -210,6 +208,7 @@ app.put("/users/:id", async (req, res) => {
  * @swagger
  * /users/{id}:
  *   delete:
+ *  tags: - Users
  *     summary: Delete a user by ID
  *     parameters:
  *       - in: path
