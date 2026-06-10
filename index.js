@@ -142,6 +142,135 @@ app.post("/signup", async (req, res) => {
     }
 });
 
+/**
+ * @swagger
+ * /users:
+ *   get:
+ *     summary: Get all users
+ *     responses:
+ *       200:
+ *         description: List of all users
+ */
+app.get("/users", async (req, res) => {
+    try {
+        const result = await pool.query(
+            "SELECT id, name, email, created_at FROM users ORDER BY created_at DESC"
+        );
+        res.json({ users: result.rows });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: "Server error" });
+    }
+});
+
+/**
+ * @swagger
+ * /users/{id}:
+ *   put:
+ *     summary: Update a user by ID
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 example: Jane Doe
+ *               email:
+ *                 type: string
+ *                 example: jane@example.com
+ *     responses:
+ *       200:
+ *         description: User updated successfully
+ *       404:
+ *         description: User not found
+ *       500:
+ *         description: Server error
+ */
+app.put("/users/:id", async (req, res) => {
+    const { id } = req.params;
+    const { name, email } = req.body;
+
+    if (!name && !email) {
+        return res.status(400).json({ error: "Provide at least a name or email to update" });
+    }
+
+    try {
+        // Build query dynamically based on what was provided
+        const fields = [];
+        const values = [];
+        let count = 1;
+
+        if (name) { fields.push(`name = $${count++}`); values.push(name); }
+        if (email) { fields.push(`email = $${count++}`); values.push(email); }
+        values.push(id);
+
+        const result = await pool.query(
+            `UPDATE users SET ${fields.join(", ")} WHERE id = $${count} RETURNING id, name, email, created_at`,
+            values
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: "User not found" });
+        }
+
+        res.json({ message: "User updated", user: result.rows[0] });
+    } catch (err) {
+        if (err.code === "23505") {
+            return res.status(400).json({ error: "Email already in use" });
+        }
+        console.error(err);
+        res.status(500).json({ error: "Server error" });
+    }
+});
+
+/**
+ * @swagger
+ * /users/{id}:
+ *   delete:
+ *     summary: Delete a user by ID
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: User deleted successfully
+ *       404:
+ *         description: User not found
+ *       500:
+ *         description: Server error
+ */
+app.delete("/users/:id", async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        const result = await pool.query(
+            "DELETE FROM users WHERE id = $1 RETURNING id, name, email",
+            [id]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: "User not found" });
+        }
+
+        res.json({ message: "User deleted", user: result.rows[0] });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: "Server error" });
+    }
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
