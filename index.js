@@ -34,7 +34,7 @@ const swaggerOptions = {
         openapi: "3.0.0",
         info: {
             title: "My First API",
-            version: "1.0.0",
+            version: "1.0.1",
             description: "A simple API with user signup",
         },
         tags: [
