@@ -116,7 +116,7 @@ app.post("/signup", async (req, res) => {
  * @swagger
  * /users:
  *   get:
- *    tags:
+ *     tags:
  *       - Users
  *     summary: Get all users
  *     responses:
@@ -138,8 +138,8 @@ app.get("/users", async (req, res) => {
 /**
  * @swagger
  * /users/{id}:
- *   put:   
- *      tags:
+ *   put:
+ *     tags:
  *       - Users
  *     summary: Update a user by ID
  *     parameters:
@@ -210,7 +210,7 @@ app.put("/users/:id", async (req, res) => {
  * @swagger
  * /users/{id}:
  *   delete:
- *      tags:
+ *     tags:
  *       - Users
  *     summary: Delete a user by ID
  *     parameters:
