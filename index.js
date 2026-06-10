@@ -47,10 +47,41 @@ const swaggerOptions = {
     apis: ["./index.js"],
 };
 
-const swaggerSpec = swaggerJsdoc(swaggerOptions);
-app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+// ---- Routes ----
 
-
+/**
+ * @swagger
+ * /signup:
+ *   post:
+ *     summary: Register a new user
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - name
+ *               - email
+ *               - password
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 example: John Doe
+ *               email:
+ *                 type: string
+ *                 example: john@example.com
+ *               password:
+ *                 type: string
+ *                 example: secret123
+ *     responses:
+ *       201:
+ *         description: User created successfully
+ *       400:
+ *         description: Email already exists or missing fields
+ *       500:
+ *         description: Server error
+ */
 app.post("/signup", async (req, res) => {
     const { name, email, password } = req.body;
 
