@@ -37,6 +37,12 @@ const swaggerOptions = {
             version: "1.0.0",
             description: "A simple API with user signup",
         },
+        tags: [
+            {
+                name: "Users",
+                description: "User management endpoints",
+            },
+        ],
     },
     apis: ["./index.js"],
 };
@@ -45,38 +51,6 @@ const swaggerSpec = swaggerJsdoc(swaggerOptions);
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // ---- Routes ----
-
-/**
- * @swagger
- * /hello:
- *   get:
- *     summary: Returns a greeting message
- *     responses:
- *       200:
- *         description: A greeting
- */
-app.get("/hello", (req, res) => {
-    res.json({ message: "Hello, World!" });
-});
-
-/**
- * @swagger
- * /greet/{name}:
- *   get:
- *     summary: Greet someone by name
- *     parameters:
- *       - in: path
- *         name: name
- *         required: true
- *         schema:
- *           type: string
- *     responses:
- *       200:
- *         description: A personalized greeting
- */
-app.get("/greet/:name", (req, res) => {
-    res.json({ message: `Hello, ${req.params.name}!` });
-});
 
 /**
  * @swagger
