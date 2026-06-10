@@ -139,7 +139,7 @@ app.get("/users", async (req, res) => {
  * @swagger
  * /users/{id}:
  *   put:   
- *   tags:
+ *      tags:
  *       - Users
  *     summary: Update a user by ID
  *     parameters:
@@ -210,7 +210,7 @@ app.put("/users/:id", async (req, res) => {
  * @swagger
  * /users/{id}:
  *   delete:
- *  tags:
+ *      tags:
  *       - Users
  *     summary: Delete a user by ID
  *     parameters:
