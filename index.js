@@ -3,9 +3,32 @@ const swaggerUi = require("swagger-ui-express");
 const swaggerJsdoc = require("swagger-jsdoc");
 const { Pool } = require("pg");
 const bcrypt = require("bcrypt");
+const http = require("http");
+const WebSocket = require("ws");
 
 const app = express();
 app.use(express.json());
+
+const server = http.createServer(app);
+const wss = new WebSocket.Server({ server });
+
+// Keep track of connected clients
+wss.on("connection", (ws) => {
+    console.log("New WebSocket client connected");
+    ws.send(JSON.stringify({ type: "connected", message: "Welcome! You'll receive live signup updates." }));
+
+    ws.on("close", () => console.log("Client disconnected"));
+});
+
+// Helper to broadcast to all connected clients
+function broadcast(data) {
+    const message = JSON.stringify(data);
+    wss.clients.forEach((client) => {
+        if (client.readyState === WebSocket.OPEN) {
+            client.send(message);
+        }
+    });
+}
 
 // Database connection
 const pool = new Pool({
@@ -98,9 +121,14 @@ app.post("/signup", async (req, res) => {
             [name, email, hashedPassword]
         );
 
+        const newUser = result.rows[0];
+
+        // Broadcast to all connected WebSocket clients
+        broadcast({ type: "new_signup", user: newUser });
+
         res.status(201).json({
             message: "User created successfully",
-            user: result.rows[0],
+            user: newUser,
         });
     } catch (err) {
         if (err.code === "23505") {
@@ -248,6 +276,6 @@ app.delete("/users/:id", async (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
+server.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });
