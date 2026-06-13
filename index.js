@@ -44,6 +44,7 @@ async function initDb() {
       name VARCHAR(100) NOT NULL,
       email VARCHAR(100) UNIQUE NOT NULL,
       password VARCHAR(200) NOT NULL,
+      role VARCHAR(20) NOT NULL DEFAULT 'student',
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
   `);
@@ -86,6 +87,7 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
  *               - name
  *               - email
  *               - password
+ *               - role
  *             properties:
  *               name:
  *                 type: string
@@ -96,34 +98,42 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
  *               password:
  *                 type: string
  *                 example: secret123
+ *               role:
+ *                 type: string
+ *                 enum: [student, teacher, staff]
+ *                 example: student
  *     responses:
  *       201:
  *         description: User created successfully
  *       400:
- *         description: Email already exists or missing fields
+ *         description: Email already exists, missing fields, or invalid role
  *       500:
  *         description: Server error
  */
 app.post("/signup", async (req, res) => {
-    const { name, email, password } = req.body;
+    const { name, email, password, role } = req.body;
 
     // Basic validation
-    if (!name || !email || !password) {
-        return res.status(400).json({ error: "Name, email and password are required" });
+    if (!name || !email || !password || !role) {
+        return res.status(400).json({ error: "Name, email, password and role are required" });
+    }
+
+    // Validate role
+    const allowedRoles = ["student", "teacher", "staff"];
+    if (!allowedRoles.includes(role)) {
+        return res.status(400).json({ error: "Role must be one of: student, teacher, staff" });
     }
 
     try {
-        // Hash the password before saving
         const hashedPassword = await bcrypt.hash(password, 10);
 
         const result = await pool.query(
-            "INSERT INTO users (name, email, password) VALUES ($1, $2, $3) RETURNING id, name, email, created_at",
-            [name, email, hashedPassword]
+            "INSERT INTO users (name, email, password, role) VALUES ($1, $2, $3, $4) RETURNING id, name, email, role, created_at",
+            [name, email, hashedPassword, role]
         );
 
         const newUser = result.rows[0];
 
-        // Broadcast to all connected WebSocket clients
         broadcast({ type: "new_signup", user: newUser });
 
         res.status(201).json({
@@ -132,7 +142,6 @@ app.post("/signup", async (req, res) => {
         });
     } catch (err) {
         if (err.code === "23505") {
-            // Unique violation — email already exists
             return res.status(400).json({ error: "Email already registered" });
         }
         console.error(err);
@@ -154,7 +163,7 @@ app.post("/signup", async (req, res) => {
 app.get("/users", async (req, res) => {
     try {
         const result = await pool.query(
-            "SELECT id, name, email, created_at FROM users ORDER BY created_at DESC"
+            "SELECT id, name, email, role, created_at FROM users ORDER BY created_at DESC"
         );
         res.json({ users: result.rows });
     } catch (err) {
@@ -189,9 +198,15 @@ app.get("/users", async (req, res) => {
  *               email:
  *                 type: string
  *                 example: jane@example.com
+ *               role:
+ *                 type: string
+ *                 enum: [student, teacher, staff]
+ *                 example: teacher
  *     responses:
  *       200:
  *         description: User updated successfully
+ *       400:
+ *         description: Invalid role or no fields provided
  *       404:
  *         description: User not found
  *       500:
@@ -199,24 +214,30 @@ app.get("/users", async (req, res) => {
  */
 app.put("/users/:id", async (req, res) => {
     const { id } = req.params;
-    const { name, email } = req.body;
+    const { name, email, role } = req.body;
 
-    if (!name && !email) {
-        return res.status(400).json({ error: "Provide at least a name or email to update" });
+    if (!name && !email && !role) {
+        return res.status(400).json({ error: "Provide at least a name, email or role to update" });
+    }
+
+    // Validate role if provided
+    const allowedRoles = ["student", "teacher", "staff"];
+    if (role && !allowedRoles.includes(role)) {
+        return res.status(400).json({ error: "Role must be one of: student, teacher, staff" });
     }
 
     try {
-        // Build query dynamically based on what was provided
         const fields = [];
         const values = [];
         let count = 1;
 
         if (name) { fields.push(`name = $${count++}`); values.push(name); }
         if (email) { fields.push(`email = $${count++}`); values.push(email); }
+        if (role) { fields.push(`role = $${count++}`); values.push(role); }
         values.push(id);
 
         const result = await pool.query(
-            `UPDATE users SET ${fields.join(", ")} WHERE id = $${count} RETURNING id, name, email, created_at`,
+            `UPDATE users SET ${fields.join(", ")} WHERE id = $${count} RETURNING id, name, email, role, created_at`,
             values
         );
 
