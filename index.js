@@ -9,7 +9,6 @@ const swaggerJsdoc = require("swagger-jsdoc");
 const { initDb } = require("./db/pool");
 const setupWebSocket = require("./websocket");
 const userRoutes = require("./routes/users");
-const miscRoutes = require("./routes/misc");
 
 const app = express();
 app.use(express.json());
@@ -39,7 +38,6 @@ const swaggerSpec = swaggerJsdoc(swaggerOptions);
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // Routes
-app.use("/", miscRoutes);
 app.use("/", userRoutes(broadcast));
 
 const PORT = process.env.PORT || 3000;
