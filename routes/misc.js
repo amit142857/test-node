@@ -33,4 +33,4 @@ router.get("/greet/:name", (req, res) => {
     res.json({ message: `Hello, ${req.params.name}!` });
 });
 
-module.exports = router;
+// module.exports = router;
