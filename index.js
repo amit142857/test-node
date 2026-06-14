@@ -39,7 +39,7 @@ const swaggerSpec = swaggerJsdoc(swaggerOptions);
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // Routes
-app.use("/", miscRoutes);
+// app.use("/", miscRoutes);
 app.use("/", userRoutes(broadcast));
 
 const PORT = process.env.PORT || 3000;
