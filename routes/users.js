@@ -272,7 +272,7 @@ module.exports = (broadcast) => {
      *       200:
      *         description: User deleted successfully
      *       404:
-     *         description: User not found
+     *         description: Galat ID daala bhai tumne
      *       500:
      *         description: Server error
      */
