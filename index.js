@@ -1,3 +1,6 @@
+require("dotenv").config();
+console.log("DATABASE_URL is:", process.env.DATABASE_URL);
+
 const dns = require("dns");
 dns.setDefaultResultOrder("ipv4first");
 
