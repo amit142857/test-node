@@ -30,6 +30,20 @@ const swaggerOptions = {
             version: "1.0.1",
             description: "A simple API with user signup, login and roles",
         },
+        components: {
+            securitySchemes: {
+                bearerAuth: {
+                    type: "http",
+                    scheme: "bearer",
+                    bearerFormat: "JWT",
+                },
+            },
+        },
+        security: [
+            {
+                bearerAuth: [],
+            },
+        ],
         tags: [
             { name: "Users", description: "User management endpoints" },
         ],
