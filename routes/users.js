@@ -4,7 +4,7 @@ const jwt = require("jsonwebtoken");
 const { pool } = require("../db/pool");
 
 const router = express.Router();
-const ALLOWED_ROLES = ["student", "teacher", "staff"];
+const ALLOWED_ROLES = ["admin", "student", "teacher", "parent", "hr", "finance"];
 
 module.exports = (broadcast) => {
 
