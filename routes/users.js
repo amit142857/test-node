@@ -216,7 +216,7 @@ module.exports = (broadcast) => {
      */
     router.put("/users/:id", async (req, res) => {
         const { id } = req.params;
-        const { name, email, role } = req.body;
+        const { name, email, role } = req.body; 
 
         if (!name && !email && !role) { 
             return res.status(400).json({ error: "Provide at least a name, email or role to update" });
