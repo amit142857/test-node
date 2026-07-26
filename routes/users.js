@@ -214,7 +214,7 @@ module.exports = (broadcast) => {
      *       500:
      *         description: Server error
      */
-    router.put("/users/:id", async (req, res) => {
+    router.put("/users/:id", async (req, res) => { 
         const { id } = req.params;
         const { name, email, role } = req.body; 
 
