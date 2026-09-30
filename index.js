@@ -38,6 +38,18 @@ const swaggerOptions = {
                     bearerFormat: "JWT",
                 },
             },
+            schemas: {
+                User: {
+                    type: "object",
+                    properties: {
+                        id: { type: "integer", example: 1 },
+                        name: { type: "string", example: "John Doe" },
+                        email: { type: "string", example: "john@example.com" },
+                        role: { type: "string", example: "student" },
+                        created_at: { type: "string", format: "date-time" },
+                    },
+                },
+            },
         },
         security: [
             {
