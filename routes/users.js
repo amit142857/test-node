@@ -8,47 +8,6 @@ const ALLOWED_ROLES = ["admin", "student", "teacher", "parent", "hr", "finance"]
 
 module.exports = (broadcast) => {
 
-    /**
-     * @swagger
-     * /signup:
-     *   post:
-     *     tags:
-     *       - Users
-     *     summary: Register a new user
-     *     security: []
-     *     requestBody:
-     *       required: true
-     *       content:
-     *         application/json:
-     *           schema:
-     *             type: object
-     *             required:
-     *               - name
-     *               - email
-     *               - password
-     *               - role
-     *             properties:
-     *               name:
-     *                 type: string
-     *                 example: John Doe
-     *               email:
-     *                 type: string
-     *                 example: john@example.com
-     *               password:
-     *                 type: string
-     *                 example: secret123
-     *               role:
-     *                 type: string
-     *                 enum: [student, teacher, staff]
-     *                 example: student
-     *     responses:
-     *       201:
-     *         description: User created successfully
-     *       400:
-     *         description: Email already exists, missing fields, or invalid role
-     *       500:
-     *         description: Server error
-     */
     router.post("/signup", async (req, res) => {
         const { name, email, password, role } = req.body;
 
@@ -81,40 +40,6 @@ module.exports = (broadcast) => {
         }
     });
 
-    /**
-     * @swagger
-     * /login:
-     *   post:
-     *     tags:
-     *       - Users
-     *     summary: Log in and receive a JWT token
-     *     security: []
-     *     requestBody:
-     *       required: true
-     *       content:
-     *         application/json:
-     *           schema:
-     *             type: object
-     *             required:
-     *               - email
-     *               - password
-     *             properties:
-     *               email:
-     *                 type: string
-     *                 example: ydvamit82@gmail.com
-     *               password:
-     *                 type: string
-     *                 example: secret123
-     *     responses:
-     *       200:
-     *         description: Login successful, returns JWT token
-     *       400:
-     *         description: Missing fields
-     *       401:
-     *         description: Invalid email or password
-     *       500:
-     *         description: Server error
-     */
     router.post("/login", async (req, res) => {
         const { email, password } = req.body;
 
@@ -151,17 +76,6 @@ module.exports = (broadcast) => {
         }
     });
 
-    /**
-     * @swagger
-     * /users:
-     *   get:
-     *     tags:
-     *       - Users
-     *     summary: Get all users
-     *     responses:
-     *       200:
-     *         description: List of all users
-     */
     router.get("/users", async (req, res) => {
         try {
             const result = await pool.query(
@@ -174,46 +88,6 @@ module.exports = (broadcast) => {
         }
     });
 
-    /**
-     * @swagger
-     * /users/{id}:
-     *   put:
-     *     tags:
-     *       - Users
-     *     summary: Update a user by ID
-     *     parameters:
-     *       - in: path
-     *         name: id
-     *         required: true
-     *         schema:
-     *           type: integer
-     *     requestBody:
-     *       required: true
-     *       content:
-     *         application/json:
-     *           schema:
-     *             type: object
-     *             properties:
-     *               name:
-     *                 type: string
-     *                 example: Jane Doe
-     *               email:
-     *                 type: string
-     *                 example: jane@example.com
-     *               role:
-     *                 type: string
-     *                 enum: [student, teacher, staff]
-     *                 example: teacher
-     *     responses:
-     *       200:
-     *         description: User updated successfully
-     *       400:
-     *         description: Invalid role or no fields provided
-     *       404:
-     *         description: User not found
-     *       500:
-     *         description: Server error
-     */
     router.put("/users/:id", async (req, res) => {
         const { id } = req.params;
         const { name, email, role } = req.body;
@@ -255,27 +129,6 @@ module.exports = (broadcast) => {
         }
     });
 
-    /**
-     * @swagger
-     * /users/{id}:
-     *   delete:
-     *     tags:
-     *       - Users
-     *     summary: Delete a user by ID
-     *     parameters:
-     *       - in: path
-     *         name: id
-     *         required: true
-     *         schema:
-     *           type: integer
-     *     responses:
-     *       200:
-     *         description: User deleted successfully
-     *       404:
-     *         description: User not found
-     *       500:
-     *         description: Server error
-     */
     router.delete("/users/:id", async (req, res) => {
         const { id } = req.params;
 
@@ -297,24 +150,70 @@ module.exports = (broadcast) => {
     });
 
     /**
- * @swagger
- * /me:
- *   get:
- *     tags:
- *       - Users
- *     summary: Get logged-in user's info from token
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: Returns user info
- *       401:
- *         description: Missing or invalid token
- *       404:
- *         description: User not found
- *       500:
- *         description: Server error
- */
+     * @swagger
+     * /logout:
+     *   post:
+     *     summary: Logout the current user
+     *     description: Invalidates the current JWT by adding it to a server-side blacklist. The token will be rejected on all subsequent requests even if it has not yet expired.
+     *     tags: [Users]
+     *     security:
+     *       - bearerAuth: []
+     *     responses:
+     *       200:
+     *         description: Successfully logged out
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               properties:
+     *                 message:
+     *                   type: string
+     *                   example: Logged out successfully
+     *       401:
+     *         description: Missing, invalid, or already-expired token
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               properties:
+     *                 error:
+     *                   type: string
+     *       500:
+     *         description: Server error
+     */
+    router.post("/logout", async (req, res) => {
+        const authHeader = req.headers["authorization"];
+
+        if (!authHeader || !authHeader.startsWith("Bearer ")) {
+            return res.status(401).json({ error: "Missing or invalid token" });
+        }
+
+        const token = authHeader.split(" ")[1];
+
+        try {
+            // Verify the token is legitimate before blacklisting
+            const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+            // Store the token in the blacklist until its natural expiry
+            const expiresAt = new Date(decoded.exp * 1000);
+            await pool.query(
+                "INSERT INTO token_blacklist (token, expires_at) VALUES ($1, $2) ON CONFLICT (token) DO NOTHING",
+                [token, expiresAt]
+            );
+
+            // Cleanup: remove already-expired blacklisted tokens to keep the table lean
+            await pool.query("DELETE FROM token_blacklist WHERE expires_at < NOW()");
+
+            res.json({ message: "Logged out successfully" });
+        } catch (err) {
+            if (err.name === "JsonWebTokenError" || err.name === "TokenExpiredError") {
+                return res.status(401).json({ error: "Invalid or expired token" });
+            }
+            console.error(err);
+            res.status(500).json({ error: "Server error" });
+        }
+    });
+
     router.get("/me", async (req, res) => {
         const authHeader = req.headers["authorization"];
 
@@ -326,6 +225,15 @@ module.exports = (broadcast) => {
 
         try {
             const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+            // Reject tokens that have been blacklisted (logged out)
+            const blacklisted = await pool.query(
+                "SELECT 1 FROM token_blacklist WHERE token = $1",
+                [token]
+            );
+            if (blacklisted.rows.length > 0) {
+                return res.status(401).json({ error: "Token has been invalidated. Please log in again." });
+            }
 
             const result = await pool.query(
                 "SELECT id, name, email, role FROM users WHERE id = $1",

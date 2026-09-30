@@ -21,6 +21,16 @@ async function initDb() {
     ALTER TABLE users ADD COLUMN IF NOT EXISTS role VARCHAR(20) NOT NULL DEFAULT 'student'
   `);
 
+    // Table to track invalidated (logged-out) tokens
+    await pool.query(`
+    CREATE TABLE IF NOT EXISTS token_blacklist (
+      id SERIAL PRIMARY KEY,
+      token TEXT UNIQUE NOT NULL,
+      expires_at TIMESTAMP NOT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
     console.log("Database ready");
 }
 
