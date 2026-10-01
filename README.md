@@ -13,15 +13,6 @@ A RESTful API built with Express.js following **clean architecture** principles.
 npm install
 ```
 
-### Environment Variables
-Create a `.env` file in the root:
-```env
-DATABASE_URL=postgresql://user:password@host:5432/dbname
-JWT_SECRET=your-jwt-secret
-SUPABASE_URL=https://your-project.supabase.co
-SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
-```
-
 ### Run Locally
 ```bash
 node index.js
