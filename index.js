@@ -14,6 +14,7 @@ const setupWebSocket = require("./websocket");
 const authRoutes = require("./routes/auth");
 const userRoutes = require("./routes/users");
 const avatarRoutes = require("./routes/avatar");
+const { errorHandler } = require("./middleware/errorHandler");
 
 const app = express();
 app.use(express.json());
@@ -73,6 +74,9 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.use("/", authRoutes(broadcast));
 app.use("/", userRoutes());
 app.use("/", avatarRoutes);
+
+// Centralized error handling
+app.use(errorHandler);
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {

@@ -1,31 +1,9 @@
 const express = require("express");
-const multer = require("multer");
-const jwt = require("jsonwebtoken");
-const { createClient } = require("@supabase/supabase-js");
-const { pool } = require("../db/pool");
+const avatarService = require("../services/avatarService");
+const { authenticate } = require("../middleware/auth");
+const { upload } = require("../middleware/upload");
 
 const router = express.Router();
-
-// Supabase client (service role for storage operations)
-const supabase = createClient(
-    process.env.SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY
-);
-
-// Multer config: memory storage, 2MB limit, images only
-const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"];
-
-const upload = multer({
-    storage: multer.memoryStorage(),
-    limits: { fileSize: 2 * 1024 * 1024 }, // 2MB
-    fileFilter: (req, file, cb) => {
-        if (ALLOWED_MIME_TYPES.includes(file.mimetype)) {
-            cb(null, true);
-        } else {
-            cb(new Error("Only JPEG, PNG and WebP images are allowed"), false);
-        }
-    },
-});
 
 /**
  * @swagger
@@ -77,81 +55,14 @@ const upload = multer({
  *       500:
  *         description: Server or Supabase error
  */
-router.post("/api/user/avatar", (req, res, next) => {
-    // Authenticate via JWT before processing upload
-    const authHeader = req.headers["authorization"];
-
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-        return res.status(401).json({ error: "Missing or invalid token" });
-    }
-
-    const token = authHeader.split(" ")[1];
-
+router.post("/api/user/avatar", authenticate, upload.single("avatar"), async (req, res) => {
     try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        req.user = { id: decoded.id, email: decoded.email, role: decoded.role };
-        next();
+        const avatarUrl = await avatarService.uploadAvatar(req.user.id, req.file);
+        res.json({ message: "Avatar updated successfully", avatar_url: avatarUrl });
     } catch (err) {
-        return res.status(401).json({ error: "Invalid or expired token" });
+        const status = err.status || 500;
+        res.status(status).json({ error: err.message || "Internal server error" });
     }
-}, upload.single("avatar"), async (req, res) => {
-    try {
-        if (!req.file) {
-            return res.status(400).json({ error: "No file uploaded. Please provide an image." });
-        }
-
-        const userId = req.user.id;
-        const extension = req.file.mimetype.split("/")[1]; // jpeg, png, webp
-        const filePath = `${userId}/avatar.${extension}`;
-
-        // Upload to Supabase Storage (upsert replaces any existing avatar)
-        const { error: uploadError } = await supabase.storage
-            .from("avatars")
-            .upload(filePath, req.file.buffer, {
-                upsert: true,
-                contentType: req.file.mimetype,
-            });
-
-        if (uploadError) {
-            console.error("Supabase upload error:", uploadError);
-            return res.status(500).json({ error: "Failed to upload avatar to storage" });
-        }
-
-        // Get the public URL
-        const { data: urlData } = supabase.storage
-            .from("avatars")
-            .getPublicUrl(filePath);
-
-        const publicUrl = urlData.publicUrl;
-
-        // Update the profiles table
-        await pool.query(
-            "UPDATE profiles SET avatar_url = $1 WHERE id = $2",
-            [publicUrl, userId]
-        );
-
-        res.json({
-            message: "Avatar updated successfully",
-            avatar_url: publicUrl,
-        });
-    } catch (err) {
-        console.error("Avatar upload error:", err);
-        res.status(500).json({ error: "Internal server error" });
-    }
-});
-
-// Handle multer errors (file too large, invalid type)
-router.use((err, req, res, next) => {
-    if (err instanceof multer.MulterError) {
-        if (err.code === "LIMIT_FILE_SIZE") {
-            return res.status(400).json({ error: "File too large. Maximum size is 2MB." });
-        }
-        return res.status(400).json({ error: err.message });
-    }
-    if (err.message === "Only JPEG, PNG and WebP images are allowed") {
-        return res.status(400).json({ error: err.message });
-    }
-    next(err);
 });
 
 module.exports = router;
