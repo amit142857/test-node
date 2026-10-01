@@ -11,7 +11,9 @@ const swaggerJsdoc = require("swagger-jsdoc");
 
 const { initDb } = require("./db/pool");
 const setupWebSocket = require("./websocket");
+const authRoutes = require("./routes/auth");
 const userRoutes = require("./routes/users");
+const avatarRoutes = require("./routes/avatar");
 
 const app = express();
 app.use(express.json());
@@ -57,6 +59,7 @@ const swaggerOptions = {
             },
         ],
         tags: [
+            { name: "Auth", description: "Authentication endpoints" },
             { name: "Users", description: "User management endpoints" },
         ],
     },
@@ -67,7 +70,9 @@ const swaggerSpec = swaggerJsdoc(swaggerOptions);
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // Routes
-app.use("/", userRoutes(broadcast));
+app.use("/", authRoutes(broadcast));
+app.use("/", userRoutes());
+app.use("/", avatarRoutes);
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
