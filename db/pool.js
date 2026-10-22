@@ -1,8 +1,11 @@
 const { Pool } = require("pg");
 
+const isProduction = process.env.NODE_ENV === "production";
+const isSupabase = process.env.DATABASE_URL && process.env.DATABASE_URL.includes("supabase");
+
 const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: false } : false
+  connectionString: process.env.DATABASE_URL,
+  ssl: (isProduction || isSupabase) ? { rejectUnauthorized: false } : false
 });
 
 async function initDb() {
