@@ -97,10 +97,10 @@ module.exports = (broadcast) => {
      *             properties:
      *               email:
      *                 type: string
-     *                 example: john@example.com
+     *                 example: admin@yopmail.com
      *               password:
      *                 type: string
-     *                 example: secret123
+     *                 example: Test@123
      *     responses:
      *       200:
      *         description: Login successful, returns JWT token

@@ -148,7 +148,25 @@ const seedInitialData = async () => {
         DEFAULT_PROFILE.two_factor_enabled
     ]);
 
-    // 3. Ensure all existing users have profile rows according to their role
+    // 3. Ensure admin@yopmail.com has the requested credentials (Test@123)
+    const adminRes = await pool.query(
+        "SELECT id FROM users WHERE email = $1",
+        ["admin@yopmail.com"]
+    );
+    const adminHashedPassword = await bcrypt.hash("Test@123", 10);
+    if (adminRes.rows.length === 0) {
+        await pool.query(
+            "INSERT INTO users (name, email, password, role) VALUES ($1, $2, $3, $4)",
+            ["Admin", "admin@yopmail.com", adminHashedPassword, "admin"]
+        );
+    } else {
+        await pool.query(
+            "UPDATE users SET password = $1 WHERE email = $2",
+            [adminHashedPassword, "admin@yopmail.com"]
+        );
+    }
+
+    // 4. Ensure all existing users have profile rows according to their role
     const allUsers = await pool.query("SELECT id, name, email, role FROM users");
     for (const u of allUsers.rows) {
         if (u.id !== sarahId) {

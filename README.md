@@ -30,6 +30,10 @@ Then visit: http://localhost:3000/api-docs/#/
 | `POST` | `/login` | Login and get JWT token |
 | `POST` | `/logout` | Invalidate current token |
 
+**Default Admin Credentials**:
+- **Email**: `admin@yopmail.com`
+- **Password**: `Test@123`
+
 ### Users
 | Method | Endpoint | Description | Auth Required |
 |--------|----------|-------------|---------------|
