@@ -36,6 +36,42 @@ const authenticate = async (req, res, next) => {
 };
 
 /**
+ * Middleware: Optional authentication.
+ * If a valid Bearer token is provided, populates req.user.
+ * If not provided or invalid, proceeds with req.user = null.
+ */
+const optionalAuthenticate = async (req, res, next) => {
+    const authHeader = req.headers["authorization"];
+
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+        req.user = null;
+        return next();
+    }
+
+    const token = authHeader.split(" ")[1];
+
+    try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+        const blacklisted = await pool.query(
+            "SELECT 1 FROM token_blacklist WHERE token = $1",
+            [token]
+        );
+        if (blacklisted.rows.length > 0) {
+            req.user = null;
+            return next();
+        }
+
+        req.user = { id: decoded.id, email: decoded.email, role: decoded.role };
+        req.token = token;
+        next();
+    } catch (err) {
+        req.user = null;
+        next();
+    }
+};
+
+/**
  * Middleware factory: Restrict access to specific roles.
  * Usage: authorize("admin") or authorize("admin", "hr")
  */
@@ -51,4 +87,4 @@ const authorize = (...allowedRoles) => {
     };
 };
 
-module.exports = { authenticate, authorize };
+module.exports = { authenticate, optionalAuthenticate, authorize };

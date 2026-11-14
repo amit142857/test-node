@@ -153,42 +153,205 @@ module.exports = () => {
 
     /**
      * @swagger
+     * components:
+     *   schemas:
+     *     UserProfile:
+     *       type: object
+     *       properties:
+     *         id:
+     *           type: integer
+     *           example: 24
+     *         name:
+     *           type: string
+     *           example: "Dr. Sarah Jenkins"
+     *         email:
+     *           type: string
+     *           example: "s.jenkins@eduflow.edu"
+     *         role:
+     *           type: string
+     *           example: "admin"
+     *         title:
+     *           type: string
+     *           example: "Senior Administrator / Mathematics Lead"
+     *         designation:
+     *           type: string
+     *           example: "Senior Administrator / Mathematics Lead"
+     *         avatar_url:
+     *           type: string
+     *           example: "https://lh3.googleusercontent.com/aida-public/AB6AXuBO90QanDyQrSXSiCVRLkiDRwul4cFwlzw2SLc5bD1_jtEaR94XYrpwf_IHHE-vJCYwTXb-x_sml4K_QXJIxUqinKnqkfLl5GFk0L2d1iZvz91WoNy9Ell_fl_dJOGot3_uV59VtP6jmjody6aZeKB1taJ-LZWwDPK-jv8DSgH8870TY5Y4HSaRvPwhN6AJTaO1NZF4uJ5QOy-zuzBXFlmNG86xfkA7oCNNXFu8pyddmEeumtKh21E7xGKL19Q5tdncXr_h3jD_clEn"
+     *         avatar_thumbnail_url:
+     *           type: string
+     *           example: "https://lh3.googleusercontent.com/aida-public/AB6AXuArmOJeUsDHpsXv3sWKWvavgyX5h_cJel5jg_BnO7LJ2M7FE04D1yIDTp7TJU8pyEaeESD2v_jFg8BQjA5BhXP_xoTjThFrNnA-4dGIhhrU-A4ZHhpr3Cbv37INpPvx0dyu_gCKXnZevQu2yhd_TVI9hldr8AuT2rZzbRKFaGBN--60dwZIAY-DDuuitwZQnjRGLfj-4Dyten90RbQ5w1seG6CbEb_4zcBr-6Ji3-K5TkJXiSi0XTAxuba8iqs5guKqYvBBSiw6WOuq"
+     *         is_verified:
+     *           type: boolean
+     *           example: true
+     *         employee_id:
+     *           type: string
+     *           example: "EDU-8842"
+     *         branch:
+     *           type: string
+     *           example: "North Wing"
+     *         phone:
+     *           type: string
+     *           example: "+1 (555) 012-3456"
+     *         subjects:
+     *           type: array
+     *           items:
+     *             type: string
+     *           example: ["Calculus III", "Linear Algebra"]
+     *         activity_pulse:
+     *           type: object
+     *           properties:
+     *             attendance_rate:
+     *               type: string
+     *               example: "98.4%"
+     *             attendance_percentage:
+     *               type: number
+     *               example: 98.4
+     *             last_login:
+     *               type: string
+     *               example: "14m ago"
+     *             last_login_at:
+     *               type: string
+     *               format: date-time
+     *         attendance_rate:
+     *           type: string
+     *           example: "98.4%"
+     *         attendance_percentage:
+     *           type: number
+     *           example: 98.4
+     *         last_login:
+     *           type: string
+     *           example: "14m ago"
+     *         last_login_at:
+     *           type: string
+     *           format: date-time
+     *         settings:
+     *           type: object
+     *           properties:
+     *             theme:
+     *               type: string
+     *               enum: [light, dark]
+     *               example: "light"
+     *             language:
+     *               type: string
+     *               example: "English (United States)"
+     *             notifications:
+     *               type: object
+     *               properties:
+     *                 push: { type: boolean, example: true }
+     *                 email: { type: boolean, example: true }
+     *                 sms: { type: boolean, example: true }
+     *                 summary: { type: string, example: "Push, Email, and SMS preferences" }
+     *             security:
+     *               type: object
+     *               properties:
+     *                 two_factor_enabled: { type: boolean, example: false }
+     *                 recent_active_sessions: { type: integer, example: 1 }
+     *                 summary: { type: string, example: "Manage 2FA and recent active sessions" }
+     *             privacy:
+     *               type: object
+     *               properties:
+     *                 summary: { type: string, example: "Review data permissions" }
+     *         theme:
+     *           type: string
+     *           example: "light"
+     *         language:
+     *           type: string
+     *           example: "English (United States)"
+     *         created_at:
+     *           type: string
+     *           format: date-time
+     *         updated_at:
+     *           type: string
+     *           format: date-time
+     *
      * /me:
      *   get:
      *     summary: Get current user profile
-     *     description: Returns the profile of the currently authenticated user based on their JWT token.
+     *     description: Returns the full EduFlow profile of the currently authenticated user based on their JWT token, matching the EduFlow Manager Profile & Settings screen.
      *     tags: [Users]
      *     security:
      *       - bearerAuth: []
      *     responses:
      *       200:
-     *         description: Current user's profile
+     *         description: Current user's complete profile
      *         content:
      *           application/json:
      *             schema:
-     *               type: object
-     *               properties:
-     *                 id:
-     *                   type: integer
-     *                   example: 1
-     *                 name:
-     *                   type: string
-     *                   example: John Doe
-     *                 email:
-     *                   type: string
-     *                   example: john@example.com
-     *                 role:
-     *                   type: string
-     *                   example: student
+     *               $ref: '#/components/schemas/UserProfile'
      *       401:
      *         description: Missing, invalid, or blacklisted token
      *       404:
      *         description: User not found
+     *   put:
+     *     summary: Update current user profile
+     *     description: Updates the profile information of the currently authenticated user (name, title, phone, branch, employee_id, subjects, theme, language, settings, etc.).
+     *     tags: [Users]
+     *     security:
+     *       - bearerAuth: []
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             properties:
+     *               name:
+     *                 type: string
+     *                 example: "Dr. Sarah Jenkins"
+     *               title:
+     *                 type: string
+     *                 example: "Senior Administrator / Mathematics Lead"
+     *               phone:
+     *                 type: string
+     *                 example: "+1 (555) 012-3456"
+     *               employee_id:
+     *                 type: string
+     *                 example: "EDU-8842"
+     *               branch:
+     *                 type: string
+     *                 example: "North Wing"
+     *               subjects:
+     *                 type: array
+     *                 items:
+     *                   type: string
+     *                 example: ["Calculus III", "Linear Algebra"]
+     *               theme:
+     *                 type: string
+     *                 enum: [light, dark]
+     *                 example: "light"
+     *               language:
+     *                 type: string
+     *                 example: "English (United States)"
+     *     responses:
+     *       200:
+     *         description: Profile updated successfully
+     *         content:
+     *           application/json:
+     *             schema:
+     *               $ref: '#/components/schemas/UserProfile'
+     *       400:
+     *         description: Validation error
+     *       401:
+     *         description: Unauthorized
+     *       500:
+     *         description: Server error
      */
     router.get("/me", authenticate, async (req, res) => {
         try {
             const user = await userService.getUserById(req.user.id);
             res.json(user);
+        } catch (err) {
+            const status = err.status || 500;
+            res.status(status).json({ error: err.message || "Server error" });
+        }
+    });
+
+    router.put("/me", authenticate, async (req, res) => {
+        try {
+            const updatedProfile = await userService.updateUser(req.user.id, req.body);
+            res.json(updatedProfile);
         } catch (err) {
             const status = err.status || 500;
             res.status(status).json({ error: err.message || "Server error" });

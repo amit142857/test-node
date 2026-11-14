@@ -14,6 +14,7 @@ const setupWebSocket = require("./websocket");
 const authRoutes = require("./routes/auth");
 const userRoutes = require("./routes/users");
 const avatarRoutes = require("./routes/avatar");
+const notificationRoutes = require("./routes/notifications");
 const { errorHandler } = require("./middleware/errorHandler");
 
 const app = express();
@@ -29,9 +30,9 @@ const swaggerOptions = {
     definition: {
         openapi: "3.0.0",
         info: {
-            title: "My First API",
+            title: "EduFlow API",
             version: "1.0.1",
-            description: "A simple API with user signup, login and roles",
+            description: "API with user authentication, profile management, and notification system",
         },
         components: {
             securitySchemes: {
@@ -62,6 +63,7 @@ const swaggerOptions = {
         tags: [
             { name: "Auth", description: "Authentication endpoints" },
             { name: "Users", description: "User management endpoints" },
+            { name: "Notifications", description: "Notification and inbox management endpoints" },
         ],
     },
     apis: ["./routes/*.js"],
@@ -74,6 +76,7 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.use("/", authRoutes(broadcast));
 app.use("/", userRoutes());
 app.use("/", avatarRoutes);
+app.use("/", notificationRoutes(broadcast));
 
 // Centralized error handling
 app.use(errorHandler);

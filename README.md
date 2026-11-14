@@ -36,11 +36,25 @@ Then visit: http://localhost:3000/api-docs/#/
 | `GET` | `/users` | Get all users | ✅ |
 | `PUT` | `/users/:id` | Update a user | ✅ |
 | `DELETE` | `/users/:id` | Delete a user | ✅ Admin only |
-| `GET` | `/me` | Get current user profile | ✅ |
+| `GET` | `/me` | Get current user profile (full EduFlow profile details) | ✅ |
+| `PUT` | `/me` | Update current user profile | ✅ |
 | `POST` | `/api/user/avatar` | Upload profile picture | ✅ |
 
-### Roles
-Available roles: `admin`, `student`, `teacher`, `parent`, `hr`, `finance`
+### Notifications
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| `GET` | `/notifications` | Fetch notifications (supports `category`, `status`, `search`, `group_by`, pagination) | Optional |
+| `GET` | `/notifications/summary` | Get badge counter and category counts | Optional |
+| `GET` | `/notifications/:id` | Get single notification details | Optional |
+| `PATCH` | `/notifications/:id/read` | Mark a notification as read | Optional |
+| `PATCH` | `/notifications/read-all` | Mark all notifications as read | Optional |
+| `PATCH` | `/notifications/:id/archive`| Archive a notification | Optional |
+| `POST` | `/notifications` | Create notification (broadcasts live via WebSocket) | Optional |
+| `DELETE` | `/notifications/:id` | Delete notification | Optional |
+
+### Roles & Categories
+- **User Roles**: `admin`, `student`, `teacher`, `parent`, `hr`, `finance`
+- **Notification Categories**: `academic`, `finance`, `attendance`, `alert`
 
 ---
 
@@ -59,25 +73,28 @@ my-api/
 ├── config/
 │   └── supabase.js              # Supabase client (initialized once)
 ├── db/
-│   └── pool.js                  # PostgreSQL pool + schema init
+│   └── pool.js                  # PostgreSQL pool + schema init & seeding
 ├── middleware/
-│   ├── auth.js                  # authenticate() + authorize() middleware
+│   ├── auth.js                  # authenticate(), optionalAuthenticate(), authorize()
 │   ├── errorHandler.js          # Centralized error handler
 │   └── upload.js                # Multer config (memory, 2MB, image-only)
 ├── repositories/
 │   ├── userRepository.js        # All user DB queries (CRUD)
 │   ├── tokenRepository.js       # Token blacklist DB queries
-│   └── profileRepository.js     # Profile/avatar DB queries
+│   ├── profileRepository.js     # Profile/avatar DB queries
+│   └── notificationRepository.js # Notification DB queries & seeding
 ├── services/
 │   ├── authService.js           # Signup, login, logout business logic
 │   ├── userService.js           # User CRUD business logic
-│   └── avatarService.js         # Avatar upload business logic
+│   ├── avatarService.js         # Avatar upload business logic
+│   └── notificationService.js   # Notification filtering, grouping & formatting
 ├── routes/
 │   ├── auth.js                  # Thin controller (POST /signup, /login, /logout)
 │   ├── users.js                 # Thin controller (GET/PUT/DELETE /users, GET /me)
-│   └── avatar.js                # Thin controller (POST /api/user/avatar)
+│   ├── avatar.js                # Thin controller (POST /api/user/avatar)
+│   └── notifications.js         # Thin controller (GET/POST/PATCH/DELETE /notifications)
 ├── index.js                     # App entry point
-└── websocket.js                 # WebSocket setup
+└── websocket.js                 # WebSocket setup & live broadcasting
 ```
 
 ### Layer Responsibilities

@@ -2,6 +2,7 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const userRepository = require("../repositories/userRepository");
 const tokenRepository = require("../repositories/tokenRepository");
+const profileRepository = require("../repositories/profileRepository");
 
 /**
  * Register a new user.
@@ -25,6 +26,7 @@ const signup = async ({ name, email, password, role }) => {
 
     try {
         const user = await userRepository.create(name, email, hashedPassword, role);
+        await profileRepository.createDefaultProfile(user.id, user).catch(() => {});
         return user;
     } catch (err) {
         if (err.code === "23505") {
@@ -68,6 +70,9 @@ const login = async ({ email, password }) => {
         process.env.JWT_SECRET,
         { expiresIn: "7d" }
     );
+
+    // Update last login timestamp in profile asynchronously
+    await profileRepository.updateLastLogin(user.id).catch(() => {});
 
     return token;
 };

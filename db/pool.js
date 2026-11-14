@@ -34,6 +34,16 @@ async function initDb() {
     )
   `);
 
+    // Initialize profiles table & seed data
+    const profileRepository = require("../repositories/profileRepository");
+    await profileRepository.initTable();
+    await profileRepository.seedInitialData();
+
+    // Initialize notifications table & seed data
+    const notificationRepository = require("../repositories/notificationRepository");
+    await notificationRepository.initTable();
+    await notificationRepository.seedInitialData();
+
     console.log("Database ready");
 }
 
