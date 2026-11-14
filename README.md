@@ -37,7 +37,8 @@ Then visit: http://localhost:3000/api-docs/#/
 ### Users
 | Method | Endpoint | Description | Auth Required |
 |--------|----------|-------------|---------------|
-| `GET` | `/users` | Get all users | ✅ |
+| `GET` | `/users` | Institutional Users: multi-field search (`search`), role tabs (`role`), sorting (`sort_by`), date filters (`date`, `date_from`, `date_to`) & partition summary | ✅ Admin only |
+| `GET` | `/users/summary` | Get role partition metrics, footprint stats & filter pill counters | ✅ Admin only |
 | `PUT` | `/users/:id` | Update a user | ✅ |
 | `DELETE` | `/users/:id` | Delete a user | ✅ Admin only |
 | `GET` | `/me` | Get current user profile (full EduFlow profile details) | ✅ |

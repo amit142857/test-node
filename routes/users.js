@@ -10,30 +10,158 @@ module.exports = () => {
      * @swagger
      * /users:
      *   get:
-     *     summary: Get all users
-     *     description: Returns a list of all registered users ordered by creation date.
+     *     summary: Get and search all institutional users (Admin only)
+     *     description: Returns institutional users with support for multi-field search (name, email, ID, role, title), role filter tabs, sorting (Newest First, Oldest First, Name), date range, and role partition summary statistics.
      *     tags: [Users]
      *     security:
      *       - bearerAuth: []
+     *     parameters:
+     *       - in: query
+     *         name: search
+     *         schema:
+     *           type: string
+     *         description: Search query matching user name, email, numeric ID (#24), employee ID (EDU-8842), role, or title
+     *         example: "Sarah"
+     *       - in: query
+     *         name: role
+     *         schema:
+     *           type: string
+     *           enum: [all, admin, student, teacher, parent, hr, finance]
+     *         description: Filter users by role pill / tab
+     *         example: "admin"
+     *       - in: query
+     *         name: sort_by
+     *         schema:
+     *           type: string
+     *           enum: [newest, oldest, name_asc, name_desc, role, id_asc, id_desc]
+     *         description: "Sort order (default: newest)"
+     *         example: "newest"
+     *       - in: query
+     *         name: date
+     *         schema:
+     *           type: string
+     *           format: date
+     *         description: Filter users created on a specific date (YYYY-MM-DD)
+     *       - in: query
+     *         name: date_from
+     *         schema:
+     *           type: string
+     *           format: date
+     *         description: Filter users created on or after date (YYYY-MM-DD)
+     *       - in: query
+     *         name: date_to
+     *         schema:
+     *           type: string
+     *           format: date
+     *         description: Filter users created on or before date (YYYY-MM-DD)
      *     responses:
      *       200:
-     *         description: List of users
+     *         description: Institutional users list with partition summary and filter pills
      *         content:
      *           application/json:
      *             schema:
      *               type: object
      *               properties:
+     *                 summary:
+     *                   type: object
+     *                   properties:
+     *                     total_registered: { type: integer, example: 7 }
+     *                     active_users: { type: integer, example: 7 }
+     *                     role_partitions: { type: integer, example: 6 }
+     *                     footprint:
+     *                       type: object
+     *                       properties:
+     *                         admins: { type: integer, example: 2 }
+     *                         departmental: { type: integer, example: 5 }
+     *                         text: { type: string, example: "2 Admins • 5 Departmental" }
+     *                     role_counts:
+     *                       type: object
+     *                       properties:
+     *                         all: { type: integer, example: 7 }
+     *                         admin: { type: integer, example: 2 }
+     *                         teacher: { type: integer, example: 1 }
+     *                         student: { type: integer, example: 1 }
+     *                         parent: { type: integer, example: 1 }
+     *                         hr: { type: integer, example: 1 }
+     *                         finance: { type: integer, example: 1 }
+     *                     filter_pills:
+     *                       type: array
+     *                       items:
+     *                         type: object
+     *                         properties:
+     *                           role: { type: string, example: "admin" }
+     *                           label: { type: string, example: "Admin" }
+     *                           count: { type: integer, example: 2 }
+     *                           active: { type: boolean, example: true }
+     *                 current_filter:
+     *                   type: object
+     *                 total:
+     *                   type: integer
+     *                   example: 7
+     *                 filtered_count:
+     *                   type: integer
+     *                   example: 2
      *                 users:
      *                   type: array
      *                   items:
-     *                     $ref: '#/components/schemas/User'
+     *                     type: object
+     *                     properties:
+     *                       id: { type: integer, example: 24 }
+     *                       display_id: { type: string, example: "#24" }
+     *                       name: { type: string, example: "Dr. Sarah Jenkins" }
+     *                       email: { type: string, example: "s.jenkins@eduflow.edu" }
+     *                       role: { type: string, example: "admin" }
+     *                       title: { type: string, example: "Senior Administrator" }
+     *                       role_badge:
+     *                         type: object
+     *                         properties:
+     *                           label: { type: string, example: "Super Admin & Faculty Lead" }
+     *                           icon: { type: string, example: "shield_person" }
+     *                       status_badge:
+     *                         type: object
+     *                         properties:
+     *                           label: { type: string, example: "Active • Primary Lead" }
+     *                           status: { type: string, example: "active" }
+     *                       created_at: { type: string, format: "date-time" }
+     *                       created_at_formatted: { type: string, example: "Nov 13, 2026, 06:36 UTC" }
+     *       401:
+     *         description: Authentication required or invalid token
+     *       403:
+     *         description: Forbidden - Only admin users can view and search users
      *       500:
      *         description: Server error
      */
-    router.get("/users", async (req, res) => {
+    router.get("/users", authenticate, authorize("admin"), async (req, res) => {
         try {
-            const users = await userService.getAllUsers();
-            res.json({ users });
+            const data = await userService.getAllUsers(req.query);
+            res.json(data);
+        } catch (err) {
+            console.error(err);
+            res.status(500).json({ error: "Server error" });
+        }
+    });
+
+    /**
+     * @swagger
+     * /users/summary:
+     *   get:
+     *     summary: Get institutional users summary and role partition metrics (Admin only)
+     *     description: Returns aggregated metrics including total registered users, active role footprint, discrete role partitions, and role filter pill counters.
+     *     tags: [Users]
+     *     security:
+     *       - bearerAuth: []
+     *     responses:
+     *       200:
+     *         description: Summary metrics
+     *       401:
+     *         description: Authentication required
+     *       403:
+     *         description: Admin only
+     */
+    router.get("/users/summary", authenticate, authorize("admin"), async (req, res) => {
+        try {
+            const summary = await userService.getUsersSummary();
+            res.json({ summary });
         } catch (err) {
             console.error(err);
             res.status(500).json({ error: "Server error" });

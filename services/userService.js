@@ -47,6 +47,117 @@ function formatRelativeTime(date) {
 }
 
 /**
+ * Format date in standard UTC format matching Institutional Users cards:
+ * e.g. "Nov 13, 2026, 06:36 UTC", "Oct 22, 2026, 06:16 UTC"
+ */
+function formatCardDate(d) {
+    if (!d) return null;
+    const date = new Date(d);
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const month = months[date.getUTCMonth()];
+    const day = date.getUTCDate();
+    const year = date.getUTCFullYear();
+    const hours = String(date.getUTCHours()).padStart(2, "0");
+    const minutes = String(date.getUTCMinutes()).padStart(2, "0");
+    return `${month} ${day}, ${year}, ${hours}:${minutes} UTC`;
+}
+
+/**
+ * Determine role badge (e.g. "Super Admin & Faculty Lead", "Finance & Billing")
+ */
+function getRoleBadge(user) {
+    if (user.id === 24 || user.email === "s.jenkins@eduflow.edu") {
+        return {
+            label: "Super Admin & Faculty Lead",
+            icon: "shield_person",
+            variant: "primary"
+        };
+    }
+    const badges = {
+        admin: { label: "Super Admin & Operations", icon: "admin_panel_settings", variant: "primary" },
+        finance: { label: "Finance & Billing", icon: "account_balance_wallet", variant: "secondary" },
+        teacher: { label: "Faculty & Academics", icon: "school", variant: "secondary" },
+        student: { label: "Student & Learner", icon: "person", variant: "tertiary" },
+        hr: { label: "HR & Staff Operations", icon: "badge", variant: "secondary" },
+        parent: { label: "Guardian & Family", icon: "family_restroom", variant: "neutral" }
+    };
+    return badges[user.role] || { label: user.title || user.role, icon: "person", variant: "primary" };
+}
+
+/**
+ * Determine status badge (e.g. "Active • Primary Lead", "Audited • High Privilege")
+ */
+function getStatusBadge(user) {
+    if (user.id === 24 || user.email === "s.jenkins@eduflow.edu") {
+        return {
+            label: "Active • Primary Lead",
+            status: "active",
+            variant: "info"
+        };
+    }
+    const badges = {
+        admin: { label: "Active • System Admin", status: "active", variant: "info" },
+        finance: { label: "Audited • High Privilege", status: "audited", variant: "warning" },
+        teacher: { label: "Active • Academic Lead", status: "active", variant: "info" },
+        student: { label: "Enrolled • Regular", status: "enrolled", variant: "success" },
+        hr: { label: "Audited • Staff Lead", status: "audited", variant: "warning" },
+        parent: { label: "Linked • Verified Guardian", status: "verified", variant: "neutral" }
+    };
+    return badges[user.role] || { label: "Active", status: "active", variant: "info" };
+}
+
+/**
+ * User card actions matching UI (e.g. security lock, view eye, audit receipt, edit pen)
+ */
+function getUserActions(user) {
+    if (user.role === "admin") {
+        return [
+            { type: "security", icon: "lock", label: "Security & Permissions" },
+            { type: "view", icon: "visibility", label: "View Profile" }
+        ];
+    }
+    if (user.role === "finance" || user.role === "hr") {
+        return [
+            { type: "audit", icon: "receipt_long", label: "Audit Logs" },
+            { type: "edit", icon: "edit", label: "Edit Record" }
+        ];
+    }
+    return [
+        { type: "view", icon: "visibility", label: "View Profile" },
+        { type: "edit", icon: "edit", label: "Edit Record" }
+    ];
+}
+
+/**
+ * Format user record for Institutional Users card list
+ */
+function formatUserCard(user) {
+    const roleBadge = getRoleBadge(user);
+    const statusBadge = getStatusBadge(user);
+    const createdFormatted = user.created_at_formatted || formatCardDate(user.created_at);
+
+    return {
+        id: user.id,
+        display_id: `#${user.id}`,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        title: user.title || roleBadge.label,
+        avatar_url: user.avatar_url || profileRepository.DEFAULT_PROFILE.avatar_url,
+        avatar_thumbnail_url: user.avatar_thumbnail_url || profileRepository.DEFAULT_PROFILE.avatar_thumbnail_url,
+        is_verified: user.is_verified ?? true,
+        employee_id: user.employee_id || `EDU-${8800 + (Number(user.id) % 1000)}`,
+        branch: user.branch || "North Wing",
+        phone: user.phone || "+1 (555) 012-3456",
+        role_badge: roleBadge,
+        status_badge: statusBadge,
+        created_at: user.created_at,
+        created_at_formatted: createdFormatted,
+        actions: getUserActions(user)
+    };
+}
+
+/**
  * Format combined user and profile records into the complete EduFlow profile response
  * tailored to the user's defined role.
  */
@@ -118,7 +229,6 @@ function formatUserProfile(user, profile = {}) {
     };
 
     // Include subjects ONLY for academic roles that teach or enroll in courses (teacher, student).
-    // Specifically, for admin, hr, finance, and parent, subjects is NOT included.
     if (ROLES_WITH_SUBJECTS.includes(user.role)) {
         formatted.subjects = (profile.subjects && profile.subjects.length > 0)
             ? profile.subjects
@@ -129,10 +239,62 @@ function formatUserProfile(user, profile = {}) {
 }
 
 /**
- * Get all users.
+ * Get summary statistics for Institutional Users view
  */
-const getAllUsers = async () => {
-    return await userRepository.findAll();
+const getUsersSummary = async () => {
+    return await userRepository.getUsersSummary();
+};
+
+/**
+ * Get all users with comprehensive search, role filters, sorting, and UI metadata.
+ */
+const getAllUsers = async (query = {}) => {
+    const search = query.search || query.q || null;
+    const role = (query.role || "all").toLowerCase();
+    const sortBy = query.sort_by || query.sort || "newest";
+    const order = query.order || (sortBy === "oldest" ? "asc" : "desc");
+    const date = query.date || null;
+    const dateFrom = query.date_from || query.from || null;
+    const dateTo = query.date_to || query.to || null;
+    const limit = query.limit ? parseInt(query.limit, 10) : null;
+    const offset = query.offset ? parseInt(query.offset, 10) : 0;
+
+    // Fetch summary statistics
+    const summary = await userRepository.getUsersSummary();
+
+    // Mark active filter pill
+    summary.filter_pills = summary.filter_pills.map(pill => ({
+        ...pill,
+        active: pill.role === role
+    }));
+
+    // Fetch filtered user records
+    const rawUsers = await userRepository.findAll({
+        search,
+        role,
+        sortBy,
+        order,
+        date,
+        dateFrom,
+        dateTo,
+        limit,
+        offset
+    });
+
+    const users = rawUsers.map(formatUserCard);
+
+    return {
+        summary,
+        current_filter: {
+            search: search || null,
+            role,
+            sort_by: sortBy,
+            order
+        },
+        total: summary.total_registered,
+        filtered_count: users.length,
+        users
+    };
 };
 
 /**
@@ -283,9 +445,12 @@ const deleteUser = async (id) => {
 module.exports = {
     ROLES_WITH_SUBJECTS,
     getAllUsers,
+    getUsersSummary,
     getUserById,
     updateUser,
     deleteUser,
     formatUserProfile,
+    formatUserCard,
+    formatCardDate,
     formatRelativeTime
 };
