@@ -172,10 +172,10 @@ module.exports = () => {
      *           example: "admin"
      *         title:
      *           type: string
-     *           example: "Senior Administrator / Mathematics Lead"
+     *           example: "Senior Administrator"
      *         designation:
      *           type: string
-     *           example: "Senior Administrator / Mathematics Lead"
+     *           example: "Senior Administrator"
      *         avatar_url:
      *           type: string
      *           example: "https://lh3.googleusercontent.com/aida-public/AB6AXuBO90QanDyQrSXSiCVRLkiDRwul4cFwlzw2SLc5bD1_jtEaR94XYrpwf_IHHE-vJCYwTXb-x_sml4K_QXJIxUqinKnqkfLl5GFk0L2d1iZvz91WoNy9Ell_fl_dJOGot3_uV59VtP6jmjody6aZeKB1taJ-LZWwDPK-jv8DSgH8870TY5Y4HSaRvPwhN6AJTaO1NZF4uJ5QOy-zuzBXFlmNG86xfkA7oCNNXFu8pyddmEeumtKh21E7xGKL19Q5tdncXr_h3jD_clEn"
@@ -198,6 +198,7 @@ module.exports = () => {
      *           type: array
      *           items:
      *             type: string
+     *           description: "List of academic subjects. Present for academic roles (teacher, student); omitted for administrative roles (admin, hr, finance, parent)."
      *           example: ["Calculus III", "Linear Algebra"]
      *         activity_pulse:
      *           type: object

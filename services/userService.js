@@ -2,6 +2,12 @@ const userRepository = require("../repositories/userRepository");
 const profileRepository = require("../repositories/profileRepository");
 
 /**
+ * Roles that teach or enroll in academic subjects
+ * Admin, HR, Finance, and Parent roles do not have subjects.
+ */
+const ROLES_WITH_SUBJECTS = ["teacher", "student"];
+
+/**
  * Format timestamp into human-readable relative string matching the UI
  * e.g., "14m ago", "2h ago", "Yesterday, 8:42 AM", "3 days ago"
  */
@@ -42,19 +48,19 @@ function formatRelativeTime(date) {
 
 /**
  * Format combined user and profile records into the complete EduFlow profile response
+ * tailored to the user's defined role.
  */
 function formatUserProfile(user, profile = {}) {
+    const roleConfig = profileRepository.ROLE_DEFAULTS[user.role] || profileRepository.ROLE_DEFAULTS.admin;
+
     const attendanceRateNum = profile.attendance_rate != null ? Number(profile.attendance_rate) : 98.4;
     const attendanceRateStr = `${attendanceRateNum}%`;
     const lastLoginFormatted = profile.last_login ? formatRelativeTime(profile.last_login) : "14m ago";
 
-    const title = profile.title || "Senior Administrator / Mathematics Lead";
-    const employeeId = profile.employee_id || "EDU-8842";
+    const title = profile.title || roleConfig.title;
+    const employeeId = profile.employee_id || (user.id ? `${roleConfig.employee_prefix}-${8800 + (Number(user.id) % 1000)}` : "EDU-8842");
     const branch = profile.branch || "North Wing";
     const phone = profile.phone || "+1 (555) 012-3456";
-    const subjects = profile.subjects && profile.subjects.length > 0
-        ? profile.subjects
-        : ["Calculus III", "Linear Algebra"];
     const theme = profile.theme || "light";
     const language = profile.language || "English (United States)";
 
@@ -75,7 +81,7 @@ function formatUserProfile(user, profile = {}) {
         summary: "Review data permissions"
     };
 
-    return {
+    const formatted = {
         id: user.id,
         name: user.name,
         email: user.email,
@@ -88,7 +94,6 @@ function formatUserProfile(user, profile = {}) {
         employee_id: employeeId,
         branch,
         phone,
-        subjects,
         activity_pulse: {
             attendance_rate: attendanceRateStr,
             attendance_percentage: attendanceRateNum,
@@ -111,6 +116,16 @@ function formatUserProfile(user, profile = {}) {
         created_at: user.created_at || profile.created_at || null,
         updated_at: profile.updated_at || null
     };
+
+    // Include subjects ONLY for academic roles that teach or enroll in courses (teacher, student).
+    // Specifically, for admin, hr, finance, and parent, subjects is NOT included.
+    if (ROLES_WITH_SUBJECTS.includes(user.role)) {
+        formatted.subjects = (profile.subjects && profile.subjects.length > 0)
+            ? profile.subjects
+            : (roleConfig.subjects && roleConfig.subjects.length > 0 ? roleConfig.subjects : ["Calculus III", "Linear Algebra"]);
+    }
+
+    return formatted;
 }
 
 /**
@@ -234,6 +249,11 @@ const updateUser = async (id, updateData) => {
         }
     }
 
+    // Do not persist subjects for non-academic roles (admin, hr, finance, parent)
+    if (!ROLES_WITH_SUBJECTS.includes(user.role)) {
+        delete profileFields.subjects;
+    }
+
     let profile;
     if (hasProfileFields) {
         profile = await profileRepository.updateProfile(id, profileFields);
@@ -261,6 +281,7 @@ const deleteUser = async (id) => {
 };
 
 module.exports = {
+    ROLES_WITH_SUBJECTS,
     getAllUsers,
     getUserById,
     updateUser,

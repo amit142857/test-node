@@ -1,15 +1,53 @@
 const { pool } = require("../db/pool");
 const bcrypt = require("bcrypt");
 
+const ROLE_DEFAULTS = {
+    admin: {
+        title: "Senior Administrator",
+        employee_prefix: "EDU",
+        has_subjects: false,
+        subjects: []
+    },
+    teacher: {
+        title: "Senior Teacher / Mathematics Lead",
+        employee_prefix: "TCH",
+        has_subjects: true,
+        subjects: ["Calculus III", "Linear Algebra"]
+    },
+    student: {
+        title: "Grade 12 Student",
+        employee_prefix: "STU",
+        has_subjects: true,
+        subjects: ["Calculus III", "Linear Algebra"]
+    },
+    parent: {
+        title: "Guardian / Parent",
+        employee_prefix: "PAR",
+        has_subjects: false,
+        subjects: []
+    },
+    hr: {
+        title: "Human Resources Lead",
+        employee_prefix: "HR",
+        has_subjects: false,
+        subjects: []
+    },
+    finance: {
+        title: "Finance Controller",
+        employee_prefix: "FIN",
+        has_subjects: false,
+        subjects: []
+    }
+};
+
 const DEFAULT_PROFILE = {
-    title: "Senior Administrator / Mathematics Lead",
+    title: "Senior Administrator",
     avatar_url: "https://lh3.googleusercontent.com/aida-public/AB6AXuBO90QanDyQrSXSiCVRLkiDRwul4cFwlzw2SLc5bD1_jtEaR94XYrpwf_IHHE-vJCYwTXb-x_sml4K_QXJIxUqinKnqkfLl5GFk0L2d1iZvz91WoNy9Ell_fl_dJOGot3_uV59VtP6jmjody6aZeKB1taJ-LZWwDPK-jv8DSgH8870TY5Y4HSaRvPwhN6AJTaO1NZF4uJ5QOy-zuzBXFlmNG86xfkA7oCNNXFu8pyddmEeumtKh21E7xGKL19Q5tdncXr_h3jD_clEn",
     avatar_thumbnail_url: "https://lh3.googleusercontent.com/aida-public/AB6AXuArmOJeUsDHpsXv3sWKWvavgyX5h_cJel5jg_BnO7LJ2M7FE04D1yIDTp7TJU8pyEaeESD2v_jFg8BQjA5BhXP_xoTjThFrNnA-4dGIhhrU-A4ZHhpr3Cbv37INpPvx0dyu_gCKXnZevQu2yhd_TVI9hldr8AuT2rZzbRKFaGBN--60dwZIAY-DDuuitwZQnjRGLfj-4Dyten90RbQ5w1seG6CbEb_4zcBr-6Ji3-K5TkJXiSi0XTAxuba8iqs5guKqYvBBSiw6WOuq",
     is_verified: true,
     employee_id: "EDU-8842",
     branch: "North Wing",
     phone: "+1 (555) 012-3456",
-    subjects: ["Calculus III", "Linear Algebra"],
     attendance_rate: 98.4,
     theme: "light",
     language: "English (United States)",
@@ -25,14 +63,14 @@ const initTable = async () => {
         CREATE TABLE IF NOT EXISTS profiles (
             id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
             user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-            title VARCHAR(255) DEFAULT 'Senior Administrator / Mathematics Lead',
+            title VARCHAR(255) DEFAULT 'Senior Administrator',
             avatar_url TEXT DEFAULT 'https://lh3.googleusercontent.com/aida-public/AB6AXuBO90QanDyQrSXSiCVRLkiDRwul4cFwlzw2SLc5bD1_jtEaR94XYrpwf_IHHE-vJCYwTXb-x_sml4K_QXJIxUqinKnqkfLl5GFk0L2d1iZvz91WoNy9Ell_fl_dJOGot3_uV59VtP6jmjody6aZeKB1taJ-LZWwDPK-jv8DSgH8870TY5Y4HSaRvPwhN6AJTaO1NZF4uJ5QOy-zuzBXFlmNG86xfkA7oCNNXFu8pyddmEeumtKh21E7xGKL19Q5tdncXr_h3jD_clEn',
             avatar_thumbnail_url TEXT DEFAULT 'https://lh3.googleusercontent.com/aida-public/AB6AXuArmOJeUsDHpsXv3sWKWvavgyX5h_cJel5jg_BnO7LJ2M7FE04D1yIDTp7TJU8pyEaeESD2v_jFg8BQjA5BhXP_xoTjThFrNnA-4dGIhhrU-A4ZHhpr3Cbv37INpPvx0dyu_gCKXnZevQu2yhd_TVI9hldr8AuT2rZzbRKFaGBN--60dwZIAY-DDuuitwZQnjRGLfj-4Dyten90RbQ5w1seG6CbEb_4zcBr-6Ji3-K5TkJXiSi0XTAxuba8iqs5guKqYvBBSiw6WOuq',
             is_verified BOOLEAN DEFAULT TRUE,
             employee_id VARCHAR(50) DEFAULT 'EDU-8842',
             branch VARCHAR(100) DEFAULT 'North Wing',
             phone VARCHAR(50) DEFAULT '+1 (555) 012-3456',
-            subjects TEXT[] DEFAULT ARRAY['Calculus III', 'Linear Algebra']::TEXT[],
+            subjects TEXT[] DEFAULT '{}',
             attendance_rate NUMERIC(5,2) DEFAULT 98.4,
             last_login TIMESTAMP WITH TIME ZONE DEFAULT (NOW() - INTERVAL '14 minutes'),
             theme VARCHAR(20) DEFAULT 'light',
@@ -70,7 +108,7 @@ const seedInitialData = async () => {
         sarahId = sarahRes.rows[0].id;
     }
 
-    // 2. Seed profile for Dr. Sarah Jenkins
+    // 2. Seed profile for Dr. Sarah Jenkins (Admin role: subjects empty)
     await pool.query(`
         INSERT INTO profiles (
             id, user_id, title, avatar_url, avatar_thumbnail_url, is_verified,
@@ -95,14 +133,14 @@ const seedInitialData = async () => {
             two_factor_enabled = EXCLUDED.two_factor_enabled
     `, [
         sarahId,
-        DEFAULT_PROFILE.title,
+        "Senior Administrator",
         DEFAULT_PROFILE.avatar_url,
         DEFAULT_PROFILE.avatar_thumbnail_url,
         DEFAULT_PROFILE.is_verified,
-        DEFAULT_PROFILE.employee_id,
+        "EDU-8842",
         DEFAULT_PROFILE.branch,
         DEFAULT_PROFILE.phone,
-        DEFAULT_PROFILE.subjects,
+        [],
         DEFAULT_PROFILE.attendance_rate,
         DEFAULT_PROFILE.theme,
         DEFAULT_PROFILE.language,
@@ -110,15 +148,12 @@ const seedInitialData = async () => {
         DEFAULT_PROFILE.two_factor_enabled
     ]);
 
-    // 3. Ensure all existing users have profile rows
-    const usersWithoutProfile = await pool.query(`
-        SELECT u.id, u.name, u.role FROM users u
-        LEFT JOIN profiles p ON u.id = p.id
-        WHERE p.id IS NULL
-    `);
-
-    for (const u of usersWithoutProfile.rows) {
-        await createDefaultProfile(u.id, u);
+    // 3. Ensure all existing users have profile rows according to their role
+    const allUsers = await pool.query("SELECT id, name, email, role FROM users");
+    for (const u of allUsers.rows) {
+        if (u.id !== sarahId) {
+            await createDefaultProfile(u.id, u);
+        }
     }
 };
 
@@ -134,26 +169,18 @@ const findByUserId = async (userId) => {
 };
 
 /**
- * Create default profile for a user
+ * Create or sync default profile for a user based on their defined role
  */
 const createDefaultProfile = async (userId, user = {}) => {
+    const roleConfig = ROLE_DEFAULTS[user.role] || ROLE_DEFAULTS.admin;
     const isDrSarah = user.email === "s.jenkins@eduflow.edu" || user.name === "Dr. Sarah Jenkins";
-    const roleTitleMap = {
-        admin: "Senior Administrator / Mathematics Lead",
-        teacher: "Senior Teacher / Mathematics Lead",
-        student: "Student / Mathematics",
-        parent: "Guardian / Parent",
-        hr: "Human Resources Lead",
-        finance: "Finance Controller"
-    };
 
-    const title = isDrSarah
-        ? DEFAULT_PROFILE.title
-        : (roleTitleMap[user.role] || DEFAULT_PROFILE.title);
-
+    const title = roleConfig.title;
     const employeeId = isDrSarah
         ? "EDU-8842"
-        : `EDU-${8800 + (Number(userId) % 1000)}`;
+        : `${roleConfig.employee_prefix}-${8800 + (Number(userId) % 1000)}`;
+
+    const subjects = roleConfig.has_subjects ? roleConfig.subjects : [];
 
     const result = await pool.query(`
         INSERT INTO profiles (
@@ -163,7 +190,11 @@ const createDefaultProfile = async (userId, user = {}) => {
         ) VALUES (
             $1, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW() - INTERVAL '14 minutes', $11, $12, $13, $14
         )
-        ON CONFLICT (id) DO UPDATE SET updated_at = CURRENT_TIMESTAMP
+        ON CONFLICT (id) DO UPDATE SET
+            title = EXCLUDED.title,
+            employee_id = EXCLUDED.employee_id,
+            subjects = EXCLUDED.subjects,
+            updated_at = CURRENT_TIMESTAMP
         RETURNING *
     `, [
         userId,
@@ -174,7 +205,7 @@ const createDefaultProfile = async (userId, user = {}) => {
         employeeId,
         DEFAULT_PROFILE.branch,
         DEFAULT_PROFILE.phone,
-        DEFAULT_PROFILE.subjects,
+        subjects,
         DEFAULT_PROFILE.attendance_rate,
         DEFAULT_PROFILE.theme,
         DEFAULT_PROFILE.language,
@@ -267,6 +298,7 @@ const updateLastLogin = async (userId) => {
 };
 
 module.exports = {
+    ROLE_DEFAULTS,
     DEFAULT_PROFILE,
     initTable,
     seedInitialData,
